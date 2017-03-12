@@ -315,7 +315,7 @@ public class Rockets extends JPanel {
             rockets.get(1).paint(g2d);
             g2d.drawImage(img2, (int) rockets.get(1).getCenterX() - img2.getWidth() / 2, (int) rockets.get(1).getCenterY() - img2.getHeight() / 2, null);
         }
-        g2d.setColor(Color.BLACK);
+        g2d.setColor(Color.WHITE);
         
         g2d.drawString("Missile:", 10, 20);
         g2d.drawString("Angle: " + aM + "°", 10, 35);
