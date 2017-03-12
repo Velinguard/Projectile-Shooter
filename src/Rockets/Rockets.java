@@ -62,7 +62,7 @@ public class Rockets extends JPanel {
         
         bg1 = null;
         try {
-            bg1 = ImageIO.read(new File(getClass().getResource("BackgroundMineLowRes.jpg").getFile()));
+            bg1 = ImageIO.read(getClass().getResource("BackgroundMineLowRes.jpg"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -276,7 +276,7 @@ public class Rockets extends JPanel {
         
         BufferedImage img = null;
         try {
-            img = ImageIO.read(new File(getClass().getResource("missile.png").getFile()));
+            img = ImageIO.read(getClass().getResource("missile.png"));
         } catch (IOException e) {
             e.printStackTrace();
         } img = transparanty(img);
@@ -290,7 +290,7 @@ public class Rockets extends JPanel {
               
         BufferedImage img2 = null;
         try {
-            img2 = ImageIO.read(new File(getClass().getResource("AAMissileCopy.png").getFile()));
+            img2 = ImageIO.read(getClass().getResource("AAMissileCopy.png"));
         } catch (IOException e) {
             e.printStackTrace();
         } 
