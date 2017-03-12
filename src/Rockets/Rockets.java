@@ -24,15 +24,16 @@ import javax.swing.JPanel;
  */
 public class Rockets extends JPanel {
     public static int WIDTH = 1920;
-    public static int HEIGHT = 1080;
+    public static int HEIGHT = 1280;
     public static int SCALER = 1;
     public static double milliSecondTimer;
     public static double delta;
     public static ArrayList<Integer> keysDown;
-    public ArrayList<Ball> rockets;
-    double timeToStart;
-    double count;
+    public static ArrayList<Ball> rockets;
+    public static double  timeToStart;
+    public static double count;
     public static double loopsGone;
+    public static double yCollide;
     
     
     public Rockets(){
@@ -42,7 +43,7 @@ public class Rockets extends JPanel {
         
         //init rockets
         rockets.add(new Ball(0,0,10,200,50, true));
-        rockets.add(new Ball(1600,0,10,200,110, false));
+        rockets.add(new Ball(1600,0,10,200,120, false));
         timeToStart = 1110; // any high number
         milliSecondTimer = 0;
         count = 1;
@@ -74,8 +75,9 @@ public class Rockets extends JPanel {
             lastFpsTime += updateLength;
             lastMilliSecondTimer += updateLength;
             fps++;
-            if (lastFpsTime > 100000000 * count){
-               milliSecondTimer += 0.1;
+            if (lastFpsTime > 100000000 / 6 * count){
+               milliSecondTimer += (0.1 / 6);
+               gravity();
                count++;
             }
             if (lastFpsTime >= 1000000000){
@@ -90,7 +92,7 @@ public class Rockets extends JPanel {
             Thread.sleep( (lastLoopTime-System.nanoTime() + OPTIMAL_TIME)/1000000 );
         }
     }
-    public void gravity(){
+    public static void gravity(){
         for (int i = 0; i < rockets.size(); i++){
             
             if(timeToStart <= milliSecondTimer){
@@ -99,13 +101,15 @@ public class Rockets extends JPanel {
                 if (milliSecondTimer > 0.1 * count){
                     rockets.add(new Ball(rockets.get(1).x - 20 ,rockets.get(1).y - HEIGHT + 100,5,0,0,false));
                 }
-                
             }
             
             if(rockets.get(i).fired){
+                if (rockets.get(i).y <= HEIGHT - yCollide - 100  ){
+                    //System.out.println("Hit at " + yCollide);
+                }
                 rockets.get(i).vSpeed -= 9.81 / 60.0;
-                rockets.get(i).move(0, (float) (rockets.get(i).vSpeed / 60.0));
-                rockets.get(i).move(1, (float) (rockets.get(i).hSpeed / 60.0));
+                rockets.get(i).move(0, (double) (rockets.get(i).vSpeed / 60.0));
+                rockets.get(i).move(1, (double) (rockets.get(i).hSpeed / 60.0));
             } else if (timeToStart==1110){
                 //function to work out the time displacment
                 derr(1);
@@ -118,30 +122,54 @@ public class Rockets extends JPanel {
             }
             
         }
-    }    
-    public void derr(int index){
-        double a = 0;
+    }     
+    public static void derr(int index){
         double X = 1600;
         double angle = 90 - Math.abs(90 - rockets.get(index).angle); 
-        a = (1 / Math.pow(rockets.get(index).speed * Math.cos(Math.toRadians(angle)) , 2) - 1 / Math.pow(rockets.get(0).speed * Math.cos(Math.toRadians(rockets.get(0).angle)), 2)) * (9.81 / 2);
-        double b = 0;
-        b = (Math.tan(Math.toRadians(angle)) + Math.tan(Math.toRadians(rockets.get(0).angle)) - (X / Math.pow(rockets.get(index).speed * Math.cos(Math.toRadians(angle)), 2)));
-        double c = 0;
-        c = (9.81 * X * X) / (2 * Math.pow(rockets.get(index).speed * Math.cos(Math.toRadians(angle)), 2)) - X * Math.tan(Math.toRadians(angle));
+        if (angle < rockets.get(0).angle){
+            
+            System.err.println("AA cannot hit target");
+            
+        } else {
+            
+            double s = rockets.get(index).speed, gamma = Math.toRadians(angle);
+            double v = rockets.get(0).speed, alpha = Math.toRadians(rockets.get(0).angle);
+            
+            double aTop = s * s * Math.cos(gamma) * Math.cos(gamma) - v * v * Math.cos(alpha) * Math.cos(alpha);
+            double aBottom = v * v * Math.cos(gamma) * Math.cos(gamma) * Math.cos(alpha) * Math.cos(alpha);
+            double a = aTop / aBottom;
+            
+            double bTop = Math.cos(gamma) * Math.sin(gamma) * 2 * s * s + 2 * s * s * Math.cos(gamma) * Math.cos(gamma) * Math.tan(alpha) - 2 * X * 9.81;
+            double bBottom = 9.81 * Math.cos(gamma) * Math.cos(gamma);          
+            double b = - bTop / bBottom;
+            
+            double cTop = 2 * X * s * s * Math.cos(gamma) * Math.sin(gamma) - 9.81 * 1600 * 1600;
+            double cBottom = 9.81 * Math.cos(gamma) * Math.cos(gamma);
+            double c = cTop / cBottom;
+            
+            double x = (- b - Math.sqrt(b * b - 4 * a * c)) / ( 2 * a);
+            
+            double dx = X - x;
+            
+            double a1 = 9.81 / 2;
+            double b1 = - s * Math.sin(gamma);
+            double c1 = dx * Math.tan(gamma) - (9.81 * dx * dx) / (2 * s * s * Math.cos(gamma) * Math.cos(gamma));
+            
+            double tA = (- b1 - Math.sqrt(b1 * b1 - 4 * a1 * c1)) / ( 2 * a1);
+            
+            double b2 = - s * Math.sin(alpha);
+            double c2 = x * Math.tan(alpha) - (9.81 * x * x) / (2 * v * v * Math.cos(alpha) * Math.cos(alpha));
+            
+            double tB = (- b2 - Math.sqrt(b2 * b2 - 4 * a1 * c2)) / ( 2 * a1);
+            
+            if (a == 0){
+                timeToStart = -1000;
+            } else{
+                timeToStart = Math.abs(tB - tA);
+            }
+        }
         
-        double x = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
-        //double y = (X - x) * Math.tan(Math.toRadians(rockets.get(index).angle)) - (9.81 * ( X * X - 2 * X * x + x * x)) / ( 2 *  Math.pow(rockets.get(index).speed * Math.cos(Math.toRadians(rockets.get(index).angle)), 2)); 
-        
-        double timeB = (- x) / (Math.cos(Math.toRadians(rockets.get(index).angle)) * rockets.get(index).speed);
-        double timeA = (X - x) / (Math.cos(Math.toRadians(rockets.get(0).angle)) * rockets.get(0).speed);
-                
-        
-        timeToStart = timeA - timeB;
-        System.out.println(timeToStart);
     }
-    
-    
-    
     
     //Window Painter
     public void paint(Graphics g){
@@ -150,10 +178,28 @@ public class Rockets extends JPanel {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         this.setFocusable(true);
         this.requestFocusInWindow();
-
-        //Game loop, but everything time related * delta to get seconds.
-        gravity();
         
+        int k;
+        g2d.setColor(Color.CYAN);
+        int w = 10 * SCALER;
+        int rows = HEIGHT / w;
+        int columns = WIDTH / w;
+        for (k = 0; k < rows; k++) {
+            g2d.drawLine(0, k * w, WIDTH, k * w);
+        }
+        for (k = 0; k < columns; k++) {
+            g2d.drawLine(k * w, 0, k * w, HEIGHT);
+        }
+        g2d.setColor(Color.BLUE);
+        w = 100 * SCALER;
+        rows = HEIGHT / w;
+        columns = WIDTH / w;
+        for (k = 0; k < rows; k++) {
+            g2d.drawLine(0, k * w, WIDTH, k * w);
+        }
+        for (k = 0; k < columns; k++) {
+            g2d.drawLine(k * w, 0, k * w, HEIGHT);
+        }
         for (int i = 0; i < rockets.size(); i++){
             rockets.get(i).paint(g2d);
         }
@@ -213,7 +259,6 @@ class Ball extends Ellipse2D.Float {
         this.vSpeed = speed * Math.sin(Math.toRadians(angle));
         this.initialVSpeed = this.vSpeed;
         this.hSpeed = speed * Math.cos(Math.toRadians(angle));
-        System.out.println(vSpeed);
         this.mass = 3;
     }
     public Ball(float x, float y, float r){
@@ -221,7 +266,7 @@ class Ball extends Ellipse2D.Float {
         this.fired = false;
     }
 
-    public void move(int d, float s) {
+    public void move(int d, double s) {
         switch (d) {
             //if within the screen then move s up
             case 0:
