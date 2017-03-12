@@ -8,14 +8,21 @@ package Rockets;
 import static Rockets.Rockets.HEIGHT;
 import static Rockets.Rockets.SCALER;
 import static Rockets.Rockets.WIDTH;
+import static Rockets.Rockets.rockets;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 /**
@@ -34,16 +41,18 @@ public class Rockets extends JPanel {
     public static double count;
     public static double loopsGone;
     public static double yCollide;
+    public static boolean hit;
     
     
     public Rockets(){
         //Init
         keysDown = new ArrayList<Integer>();
         rockets = new ArrayList<Ball>();    
+        hit  = false;
         
         //init rockets
         rockets.add(new Ball(0,0,10,200,50, true));
-        rockets.add(new Ball(1600,0,10,200,120, false));
+        rockets.add(new Ball(1600,0,10,200,80, false));
         timeToStart = 1110; // any high number
         milliSecondTimer = 0;
         count = 1;
@@ -92,6 +101,7 @@ public class Rockets extends JPanel {
             Thread.sleep( (lastLoopTime-System.nanoTime() + OPTIMAL_TIME)/1000000 );
         }
     }
+    
     public static void gravity(){
         for (int i = 0; i < rockets.size(); i++){
             
@@ -104,15 +114,25 @@ public class Rockets extends JPanel {
             }
             
             if(rockets.get(i).fired){
-                if (rockets.get(i).y <= HEIGHT - yCollide - 100  ){
-                    //System.out.println("Hit at " + yCollide);
-                }
                 rockets.get(i).vSpeed -= 9.81 / 60.0;
                 rockets.get(i).move(0, (double) (rockets.get(i).vSpeed / 60.0));
                 rockets.get(i).move(1, (double) (rockets.get(i).hSpeed / 60.0));
             } else if (timeToStart==1110){
                 //function to work out the time displacment
                 derr(1);
+            }
+            
+            double dx = Math.abs(rockets.get(1).getCenterX() - rockets.get(0).getCenterX());
+            double dy = Math.abs(rockets.get(1).getCenterY() - rockets.get(0).getCenterY());
+            double r = Math.sqrt(dx * dx + dy * dy);
+            if (r <= rockets.get(1).getHeight() / 2 + rockets.get(0).getHeight() / 2 && !hit){
+                //They have collided
+                for (int z = 0; z < 30; z++){
+                    rockets.add(new Ball(rockets.get(1).x - 20 ,rockets.get(1).y - HEIGHT + 100));
+                }
+                hit = true;
+                rockets.get(0).fired = false;
+                rockets.get(1).fired = false;
             }
             
             //For the trail
@@ -163,6 +183,7 @@ public class Rockets extends JPanel {
             double tB = (- b2 - Math.sqrt(b2 * b2 - 4 * a1 * c2)) / ( 2 * a1);
             
             if (a == 0){
+                // angles are the same, therefore it should fire immediatly
                 timeToStart = -1000;
             } else{
                 timeToStart = Math.abs(tB - tA);
@@ -178,7 +199,7 @@ public class Rockets extends JPanel {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         this.setFocusable(true);
         this.requestFocusInWindow();
-        
+        /*
         int k;
         g2d.setColor(Color.CYAN);
         int w = 10 * SCALER;
@@ -200,10 +221,50 @@ public class Rockets extends JPanel {
         for (k = 0; k < columns; k++) {
             g2d.drawLine(k * w, 0, k * w, HEIGHT);
         }
-        for (int i = 0; i < rockets.size(); i++){
+        */
+        
+        BufferedImage img = null;
+        try {
+            img = ImageIO.read(new File(getClass().getResource("missile.png").getFile()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        double angle = Math.atan2(rockets.get(0).vSpeed, rockets.get(0).hSpeed);
+        AffineTransform transform = new AffineTransform();
+        transform.translate(img.getWidth() / 2, img.getWidth() / 2);
+        transform.rotate(4 * Math.PI / 2 - angle, img.getWidth() / 2, img.getHeight()/ 2);
+        transform.translate(-img.getWidth() /2 ,-img.getWidth() / 2);
+        AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
+        img = op.filter(img, null);
+        
+        BufferedImage img2 = null;
+        try {
+            img2 = ImageIO.read(new File(getClass().getResource("AAMissile.jpg").getFile()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        angle = Math.PI - ( Math.atan2(rockets.get(1).vSpeed, rockets.get(1).hSpeed) - Math.PI / 2);
+        AffineTransform transform2 = new AffineTransform();
+        transform2.translate(img2.getWidth() / 2, img2.getWidth() / 2);
+        transform2.rotate(angle, img2.getWidth() / 2, img2.getHeight()/ 2);
+        transform2.translate(-img2.getWidth() / 2 + 4 ,-img2.getWidth() / 2);
+        AffineTransformOp op2 = new AffineTransformOp(transform2, AffineTransformOp.TYPE_BILINEAR);
+        img2 = op2.filter(img2, null);
+        
+        
+        for (int i = 2; i < rockets.size(); i++){
             rockets.get(i).paint(g2d);
         }
-                                    
+        if (rockets.get(0).fired){
+            rockets.get(0).paint(g2d);
+            g2d.drawImage(img, (int) rockets.get(0).getCenterX() - img.getWidth() / 2, (int) rockets.get(0).getCenterY() - img.getHeight() / 2, null);
+        }
+        if (rockets.get(1).fired){
+            rockets.get(1).paint(g2d);
+            g2d.drawImage(img2, (int) rockets.get(1).getCenterX() - img2.getWidth() / 2, (int) rockets.get(1).getCenterY() - img2.getHeight() / 2, null);
+        }
+        
+        
     }
     //Listens for button presses
     public class MyKeyListener implements KeyListener{
@@ -249,8 +310,11 @@ class Ball extends Ellipse2D.Float {
 
     public Ball(float x, float y, float r, double speed, double angle, boolean fire) {
         super(x + 20, y + HEIGHT - 100, r, r);
-        colour = Color.blue;
+        colour = Color.GRAY;
         this.va = (int) 9.81;
+        if (rockets.size()>0){
+            angle = 90 + Math.abs(90 - angle); 
+        }
         this.angle = angle;
         this.speed = speed;
         this.fired = fire;
@@ -260,6 +324,19 @@ class Ball extends Ellipse2D.Float {
         this.initialVSpeed = this.vSpeed;
         this.hSpeed = speed * Math.cos(Math.toRadians(angle));
         this.mass = 3;
+    }
+    public Ball (float x, float y){
+        super(x + 20, y + HEIGHT - 100, 3,3);
+        double random = Math.random() * 5;
+        super.height = (float) (random / 2) + 1;
+        super.width = (float) (random / 2) + 1;
+        double random2 = Math.random() * 50 - 25;
+        double random3 = Math.random() * 100 - 50;
+        this.hSpeed = random2;this.vSpeed = random3;
+        this.mass = 1;
+        this.fired = true;
+        colour= Color.BLACK;
+        
     }
     public Ball(float x, float y, float r){
         super (x, y, r, r);
