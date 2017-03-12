@@ -43,7 +43,7 @@ public class Rockets extends JPanel {
         //init rockets
         rockets.add(new Ball(0,0,10,200,50, true));
         rockets.add(new Ball(1600,0,10,200,110, false));
-        timeToStart = 1110;
+        timeToStart = 1110; // any high number
         milliSecondTimer = 0;
         count = 1;
         
