@@ -140,7 +140,7 @@ public class Rockets extends JPanel {
             }
             loopsGone++;
             app.repaint();
-            Thread.sleep( (lastLoopTime-System.nanoTime() + OPTIMAL_TIME)/1000000 );
+            //Thread.sleep( (lastLoopTime-System.nanoTime() + OPTIMAL_TIME)/1000000 );
         }
     }
     
@@ -162,6 +162,7 @@ public class Rockets extends JPanel {
             } else if (timeToStart==1110){
                 //function to work out the time displacment
                 derr(1);
+                //derrOld(1);
             }
             
             double dx = Math.abs(rockets.get(1).getCenterX() - rockets.get(0).getCenterX());
@@ -187,54 +188,18 @@ public class Rockets extends JPanel {
         }
     }     
     public static void derr(int index){
-        double X = distanceAway;
-        double angle = 90 - Math.abs(90 - rockets.get(index).angle); 
-        
-        double s = rockets.get(index).speed, gamma = Math.toRadians(angle);
-        double v = rockets.get(0).speed, alpha = Math.toRadians(rockets.get(0).angle);
-           
-        double aTop = s * s * Math.cos(gamma) * Math.cos(gamma) - v * v * Math.cos(alpha) * Math.cos(alpha);
-        double aBottom = v * v * Math.cos(gamma) * Math.cos(gamma) * Math.cos(alpha) * Math.cos(alpha);
-        double a = aTop / aBottom;
-            
-        double bTop = Math.cos(gamma) * Math.sin(gamma) * 2 * s * s + 2 * s * s * Math.cos(gamma) * Math.cos(gamma) * Math.tan(alpha) - 2 * X * 9.81;
-        double bBottom = 9.81 * Math.cos(gamma) * Math.cos(gamma);          
-        double b = - bTop / bBottom;
-           
-        double cTop = 2 * X * s * s * Math.cos(gamma) * Math.sin(gamma) - 9.81 * 1600 * 1600;
-        double cBottom = 9.81 * Math.cos(gamma) * Math.cos(gamma);
-        double c = cTop / cBottom;
-            
-        double derr = b * b - 4 * a * c;
-        if (derr >= 0){
-            double x = (- b - Math.sqrt(derr)) / ( 2 * a);
-            xCollide = x;
-            double y = x * Math.tan(alpha) - (9.91 * x * x)/ (2 * v * v * Math.cos(alpha));
-            yCollide = y;
-            double dx = X - x;
-            
-            double a1 = 9.81 / 2;
-            double b1 = - s * Math.sin(gamma);
-            double c1 = dx * Math.tan(gamma) - (9.81 * dx * dx) / (2 * s * s * Math.cos(gamma) * Math.cos(gamma));
-            
-            double tA = (- b1 - Math.sqrt(b1 * b1 - 4 * a1 * c1)) / ( 2 * a1);
-            
-            double b2 = - v * Math.sin(alpha);
-            double c2 = x * Math.tan(alpha) - (9.81 * x * x) / (2 * v * v * Math.cos(alpha) * Math.cos(alpha));
-            
-            double tB = (- b2 - Math.sqrt(b2 * b2 - 4 * a1 * c2)) / ( 2 * a1);
-                        
-            timeCollide = tB;
-            if (a == 0){
-                // angles are the same, therefore it should fire immediatly
-                timeToStart = -1000;
-            } else{
-                timeToStart = Math.abs(tB - tA);
-            }
-        } else {
-            System.err.println("Missile cannot be stopped!");
+        MathsModule mm = new MathsModule(rockets.get(0) , rockets.get(index), distanceAway);
+        Thread th = new Thread(mm);
+        th.start();
+        try {
+            th.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        
+        timeToStart = mm.getTimeToStart();
+        xCollide = mm.getxCollide();
+        yCollide = mm.getyCollide();
+        timeCollide = mm.getTimeCollide();
     }
     
     public BufferedImage transparanty(BufferedImage image){
@@ -389,92 +354,7 @@ public class Rockets extends JPanel {
         }
     }
 }
-//Define other objects.
-class Ball extends Ellipse2D.Float {
 
-    Color colour;
-    double[] startPos;
-    double ha; //horizontal acceleration, + = -->
-    double va; //vertical acceleration, + = ^
-    double vSpeed; //vertical speed, + = ^
-    double hSpeed; //horizontal speed, + = -->
-    double initialVSpeed;
-    double speed;
-    int mass;
-    boolean fired;
-    double angle;
-
-    public Ball(float x, float y, float r, double speed, double angle, boolean fire) {
-        super(x + 20, y + HEIGHT - 100, r, r);
-        colour = Color.GRAY;
-        this.va = (int) 9.81;
-        if (rockets.size()>0){
-            angle = 90 + Math.abs(90 - angle); 
-        }
-        this.angle = angle;
-        this.speed = speed;
-        this.fired = fire;
-        this.startPos = new double[2]; this.startPos[0] = x + 20; this.startPos[1] = y + HEIGHT - 100;
-        this.ha = (int) 0;
-        this.vSpeed = speed * Math.sin(Math.toRadians(angle));
-        this.initialVSpeed = this.vSpeed;
-        this.hSpeed = speed * Math.cos(Math.toRadians(angle));
-        this.mass = 3;
-    }
-    public Ball (float x, float y){
-        super(x + 20, y + HEIGHT - 100, 3,3);
-        double random = Math.random() * 5;
-        super.height = (float) (random / 2) + 1;
-        super.width = (float) (random / 2) + 1;
-        double speed = rockets.get(1).speed + rockets.get(0).speed;
-        speed /= 10;
-        double random2 = Math.random() * speed - speed / 2;
-        double random3 = Math.random() * speed - speed;
-        this.hSpeed = random2;this.vSpeed = random3;
-        this.mass = 1;
-        this.fired = true;
-        colour= Color.BLACK;
-        
-    }
-    public Ball(float x, float y, float r){
-        super (x, y, r, r);
-        this.fired = false;
-    }
-
-    public void move(int d, double s) {
-        switch (d) {
-            //if within the screen then move s up
-            case 0:
-                if (s < 0) {
-                    //if (HEIGHT * SCALER - super.height > super.getCenterY() + s) {
-                        super.y -= s;
-                    //}
-                } else {
-                    //if (super.height < super.getCenterY() - s) {
-                        super.y -= s;
-                    //}
-                }
-                break;
-            case 1:
-                //if within the screen then move s to the right
-                if (s < 0) {
-                    //if (super.width < super.getCenterX() - s) {
-                        super.x += s;
-                    //}
-                } else {
-                    //if (WIDTH * SCALER - super.width > super.getCenterX() + s) {
-                        super.x += s;
-                    //}
-                }
-                break;
-        }
-    }
-
-    public void paint(Graphics2D g) {
-        g.setColor(colour);
-        g.fill(this);
-    }
-}
 
 /* Useful shortcuts:
 grid (tab) = grid layout every 10 pixels, on a 100 pixel = 1 metre scale, that is 10 cm.
