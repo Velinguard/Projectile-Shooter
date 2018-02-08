@@ -1,10 +1,13 @@
-package Rockets;
+package Rockets.MathsManager;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+//MathsModule is the point of the project.
+//Pre:  Two projectiles && Distance between them
+//Post: Time needed to launch first rocket to hit second
+//          && position of collision && time of collision.
 public class MathsModule implements Runnable{
     private final double s, v;
     private final double gamma;
@@ -33,18 +36,36 @@ public class MathsModule implements Runnable{
         return distanceAway;
     }
 
-    public MathsModule(Ball aa,  Ball rocket, double distanceAway){
+    //Getters for outputs
+    public double getxCollide() {
+        return xCollide;
+    }
+
+    public double getyCollide() {
+        return yCollide;
+    }
+
+    public double getTimeCollide() {
+        return timeCollide;
+    }
+
+    public double getTimeToStart() {
+        return timeToStart;
+    }
+
+    public MathsModule(Projectile aa,  Projectile rocket, double distanceAway){
         this.s = rocket.getSpeed(); //Speed of rocket to be stopped.
         this.v = aa.getSpeed();     //Speed of AA rocket
-        this.gamma = Math.toRadians(90 - Math.abs(90 - rocket.getAngle()));
-        this.alpha = Math.toRadians(aa.getAngle());
-        this.distanceAway = distanceAway;
+        this.gamma = Math.PI/2 - Math.abs(Math.PI/2 - rocket.getAngle()); //Angle of rocket
+        this.alpha = aa.getAngle();                                       //Angle of AA rocket
+        this.distanceAway = distanceAway; //Distance between rockets in m
         //init outputs
         this.timeToStart = 0; this.xCollide = 0; this.yCollide = 0; this.timeCollide = 0;
     }
 
     @Override
     public void run() {
+        //Completes calculations to allow for the quadratic to be solved.
         List<myThread> rootCalculations = Arrays.asList
             (new A(this), new B(this), new C(this));
 
@@ -63,13 +84,13 @@ public class MathsModule implements Runnable{
             } else {
                 RootFinder rtFinder = new RootFinder(rt);
                 rtFinder.run();
-                double x = rtFinder.getOutput();
+                double x = rtFinder.getOutput(); //x location where they collide.
 
-                double dx = distanceAway - x;
-                double a1 = 9.81 / 2;
+                double dx = distanceAway - x; //Distance AA has to travel.
+                double a = 9.81 / 2;
 
                 List<myThread> calculations = Arrays.asList(
-                    //y index (0)
+                    //y location where they collide: index (0)
                     new Calculator(this) {
                         @Override
                         public void calculator() {
@@ -77,6 +98,7 @@ public class MathsModule implements Runnable{
                                 (9.91 * x * x) / (2 * v * v * Math.cos(alpha));
                         }
                     },
+                    //b1,b2,c1 and c2 all values to be used in calculating quadratic.
                     //b1 index (1)
                     new Calculator(this) {
                         @Override
@@ -112,11 +134,11 @@ public class MathsModule implements Runnable{
                 threadListRunner(calculations);
 
                 List<myThread> calculations2 = Arrays.asList(
-                    //tA = root(a1, b1, c1) index (0)
-                    new RootFinder(a1, calculations.get(1).getOutput()
+                    //tA = root(a1, b1, c1) time from missile launch to collision: index (0)
+                    new RootFinder(a, calculations.get(1).getOutput()
                         , calculations.get(2).getOutput()),
-                    //tB = root(a1, b2, c2) index (1)
-                    new RootFinder(a1, calculations.get(3).getOutput()
+                    //tB = root(a1, b2, c2) time from aa launch to collision: index (1)
+                    new RootFinder(a, calculations.get(3).getOutput()
                         , calculations.get(4).getOutput())
                 );
 
@@ -126,6 +148,8 @@ public class MathsModule implements Runnable{
                 xCollide = x;
                 yCollide = calculations.get(0).getOutput();
                 timeCollide = calculations2.get(1).getOutput();
+                //Difference between when the collision will happen and the time it will
+                //take for the AA rocket to get there.
                 timeToStart = Math.abs(calculations2.get(1).getOutput()
                     - calculations2.get(0).getOutput());
             }
@@ -136,22 +160,6 @@ public class MathsModule implements Runnable{
         }
 
 
-    }
-
-    public double getxCollide() {
-        return xCollide;
-    }
-
-    public double getyCollide() {
-        return yCollide;
-    }
-
-    public double getTimeCollide() {
-        return timeCollide;
-    }
-
-    public double getTimeToStart() {
-        return timeToStart;
     }
 
     private void threadListRunner(List<myThread> threads){
@@ -187,6 +195,7 @@ abstract class Calculator extends myThread{
         calculator();
     }
 }
+//Used to calculate quadratic.
 class A extends Calculator{
     public A(MathsModule mm){
         super(mm);
@@ -222,6 +231,7 @@ class C extends Calculator{
         output = cTop / cBottom;
     }
 }
+//Used to find root of quadratics.
 class Root extends myThread{
     protected final double a;
     protected final double b;
