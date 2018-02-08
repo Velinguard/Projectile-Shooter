@@ -1,6 +1,5 @@
 package Rockets.ImageManager;
 
-import Rockets.Rockets;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;

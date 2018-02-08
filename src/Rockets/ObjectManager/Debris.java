@@ -1,14 +1,13 @@
 package Rockets.ObjectManager;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
 
 public class Debris extends MovingBall{
 
     //Debris constructor for when there is a collision
     public Debris (MovingBall rocketA, MovingBall rocketB){
         super(rocketA.x, rocketA.y, 3);
-        
+
         int random1 = (int) (Math.random() * 4);
         super.height = random1;
         super.width = random1;
