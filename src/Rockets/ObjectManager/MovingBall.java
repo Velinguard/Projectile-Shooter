@@ -5,7 +5,7 @@ import Rockets.ImageManager.ImageManager;
 import Rockets.MathsManager.Projectile;
 import java.awt.image.BufferedImage;
 
-public class MovingBall extends Ball implements Projectile{
+abstract public class MovingBall extends Ball implements Projectile{
     double vSpeed; //vertical speed, + = ^
     double hSpeed; //horizontal speed, + = -->
     double speed;

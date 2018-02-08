@@ -18,37 +18,36 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 /**
+ * Provides a visual representation of how the software calculates when an aa rocket
+ * should be launched to collide with an incoming missile.
+ * The important functionality is in the MathsManager package, this class is just a
+ * visual simulation.
  *
- * @author Sam
+ * @author Samuel Brotherton
  */
 public class Rockets extends JPanel {
     private static int WIDTH = 1920;
     public static int HEIGHT = 1080;
     private static int SCALER = 1;
     private static double milliSecondTimer;
-    private static int count;
-    private static double delta;
-    private static ArrayList<Integer> keysDown;
-    private static ArrayList<Ball> stationary;
-    private static ArrayList<Debris> debris;
-    private static AA aa;
-    private static Missile missile;
-    private static double  timeToStart;
-    private static double loopsGone;
-    private static double yCollide, xCollide, timeCollide;
-    private static boolean hit;
+    private int count;
+    private ArrayList<Integer> keysDown;
+    private ArrayList<Ball> stationary;
+    private ArrayList<Debris> debris;
+    private AA aa;
+    private Missile missile;
+    private double timeToStart;
+    private double yCollide, xCollide, timeCollide;
+    private boolean hit;
     private static boolean running;
-    private static double distanceAway;
-    private static double vM, vAA, aM, aAA;
-    private static ImageManager bg1;
+    private double distanceAway;
+    private double vM, vAA, aM, aAA;
+    private ImageManager bg1;
 
     public Rockets(){
         //Init
@@ -59,13 +58,12 @@ public class Rockets extends JPanel {
 
         bg1 = new ImageManager("BackgroundMineLowRes.jpg");
 
-        //init rockets
+        //initial values
         vM = 200;
         aM = 40;
         vAA = 300;
-        aAA = 120; // 90 + (90 - angle)
+        aAA = 70;
         distanceAway = 1600;
-        milliSecondTimer = 0;
 
         reset();
 
@@ -104,7 +102,7 @@ public class Rockets extends JPanel {
     public static void main(String[] args) throws InterruptedException{
         JFrame frame = new JFrame("Missile Launcher");
         Rockets app = new Rockets();
-        frame.setSize((int)(WIDTH * SCALER),(int)(HEIGHT * SCALER));
+        frame.setSize((WIDTH * SCALER),(HEIGHT * SCALER));
         frame.add(app);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -119,7 +117,6 @@ public class Rockets extends JPanel {
             long now = System.nanoTime();
             long updateLength = now - lastLoopTime;
             lastLoopTime = now;
-            delta = updateLength / ((double)OPTIMAL_TIME);
             lastFpsTime += updateLength;
             lastMilliSecondTimer += updateLength;
             fps++;
@@ -137,7 +134,6 @@ public class Rockets extends JPanel {
                 fps = 0;
                 count = 1;
             }
-            loopsGone++;
             app.repaint();
 
             Thread.sleep( (lastLoopTime-System.nanoTime() + OPTIMAL_TIME)/1000000 );
@@ -161,6 +157,7 @@ public class Rockets extends JPanel {
         rocketMover(aa);
         rocketMover(missile);
 
+        //Used to calculate if a collision has occurred.
         double dx = Math.abs(aa.getCenterX() - missile.getCenterX());
         double dy = Math.abs(aa.getCenterY() - missile.getCenterY());
         double r = Math.sqrt(dx * dx + dy * dy);
@@ -205,26 +202,32 @@ public class Rockets extends JPanel {
         this.requestFocusInWindow();
 
         g2d.drawImage(bg1.getImage(), 0,0, null);
+
         try {
             debris.stream().forEach(t -> t.paint(g2d));
             stationary.stream().forEach(t -> t.paint(g2d));
         } catch (Exception e){
-
+            //Do nothing <- To fix.
         }
 
         if (missile.getFired()){
             missile.paint(g2d);
             g2d.drawImage(missile.transform(),
                 (int) missile.getCenterX() - missile.getIm().getWidth() / 2
-                , (int) missile.getCenterY() - missile.getIm().getHeight() / 2, null);
+                , (int) missile.getCenterY() - missile.getIm().getHeight() / 2 - 10
+                , null);
         }
         if (aa.getFired()){
             aa.paint(g2d);
             g2d.drawImage(aa.transform(),
-                (int) aa.getCenterX() - aa.getIm().getWidth() / 2
-                , (int) aa.getCenterY() - aa.getIm().getHeight() / 2, null);
+                (int) aa.getCenterX() - aa.getIm().getWidth() / 2 - 5
+                , (int) aa.getCenterY() - aa.getIm().getHeight() / 2
+                , null);
         }
+        stringDrawer(g2d);
+    }
 
+    private void stringDrawer(Graphics2D g2d){
         g2d.setColor(Color.WHITE);
 
         g2d.drawString("Missile:", 10, 20);
@@ -237,13 +240,17 @@ public class Rockets extends JPanel {
         g2d.drawString("Situated " + distanceAway + "m away", WIDTH - 150, 65);
         DecimalFormat df = new DecimalFormat("#.00");
         g2d.drawString("Collision at:", 10, HEIGHT - 80);
-        g2d.drawString("( x = " + df.format(xCollide) + "m, y = " + df.format(yCollide) + "m)" , 10, HEIGHT - 65);
+        g2d.drawString("( x = " + df.format(xCollide) + "m, y = " +
+            df.format(yCollide) + "m)", 10, HEIGHT - 65);
         g2d.drawString("After " + df.format(timeCollide) + "s", 10, HEIGHT - 50);
 
         g2d.drawString("Controls:", WIDTH - 420,  HEIGHT - 82);
-        g2d.drawString("Speed: A and D for Missile; Left and Right arrow for AA.", WIDTH - 350,  HEIGHT - 80);
-        g2d.drawString("Angle: W and S for Missile; Up and Down arrow for AA.", WIDTH - 350,  HEIGHT - 65);
-        g2d.drawString("Pause Simulation: Space, Reset Simulation: Escape ", WIDTH - 350,  HEIGHT - 50);
+        g2d.drawString("Speed: A and D for Missile; Left and Right arrow for AA.",
+            WIDTH - 350,  HEIGHT - 80);
+        g2d.drawString("Angle: W and S for Missile; Up and Down arrow for AA.",
+            WIDTH - 350,  HEIGHT - 65);
+        g2d.drawString("Pause Simulation: Space, Reset Simulation: Escape ",
+            WIDTH - 350,  HEIGHT - 50);
     }
 
     //Listens for button presses
