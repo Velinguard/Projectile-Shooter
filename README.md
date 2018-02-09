@@ -47,7 +47,7 @@ It was important to implement MathsModule as a thread, as in a real life situati
 
 ### Project Influence
 
-The idea to develop this software was first considered during my A-Level studies when I was studying Mechanics 3 at A-Level as well as preparing for a STEP 2 exam. I was compelled by one of the questions in the mechanics section of a STEP exam, which required you to work out the time that you should launch a rocket to collide with another. My initial prototype was completed around April 2017 where I was able to complete the task but without the use of threads, and a very rudimentary object structure. Almost a year later I revisited the project, re-writing the code utilising threads, and other techniques such as abstract classes and interfaces, which I had learnt during my degree studies.
+The idea to develop this software was first considered during my A-Level studies when I was studying Mechanics 3 at A-Level as well as preparing for a STEP 2 exam. I was compelled by one of the questions in the mechanics section of a STEP exam, which required you to work out the time that you should launch a rocket to collide with another. My initial prototype was completed around April 2017 where I was able to complete the task but without the use of threads, and a very rudimentary object structure. Almost a year later I revisited the project, re-writing the code utilising threads, and other techniques such as abstract classes and interfaces, which I learned during my degree studies.
 
 ### Future of the Project
 
