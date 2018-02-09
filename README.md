@@ -26,6 +26,19 @@ yCollide = mm.getyCollide();
 timeCollide = mm.getTimeCollide();
 ```
 
+Where missile and aa are Java objects that satisfy the Projectiles interface defined by:
+
+```
+public interface Projectile {
+    public double getSpeed();
+    public double getAngle();
+}
+```
+
+Where `getSpeed()` returns the initial velocity of a Projectile in ms^-1, and `getAngle()` returns the angle of the rocket in radians.
+
+Furthermore `distanceAway` is a double that represents the distance between the two launch sites in meters. 
+
 ### Use of Threads
 
 It was important to implement MathsModule as a thread, as in a real life situation you may have multiple missiles being launched at the same time, and you would need to calculate the launch time for these missiles simultaneously.
